@@ -78,7 +78,7 @@ export class EventIndexer {
         try {
             const [dtfId, creator, targetValuation, isTargetHigher, yesToken, noToken] = event.args;
     
-            // First, create or find the user
+            // Create or find the user
             await prisma.user.upsert({
                 where: { address: creator },
                 create: {
