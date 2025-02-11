@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  address        String     @id
+  firstTradeDate DateTime?
+  totalVolume    Float      @default(0)
+  createdAt      DateTime   @default(now())
+  positions      Position[]
+  dtfs           DTF[]
+  statistics     UserStatistics?
+}
+
+model DTF {
+  id              Int        @id
+  creatorAddress  String
+  name            String
+  expiryTime      DateTime
+  targetValuation Float
+  isTargetHigher  Boolean
+  isSettled       Boolean    @default(false)
+  yesWon          Boolean?
+  tokensWithdrawn Boolean    @default(false)
+  yesTokenAddress String
+  noTokenAddress  String
+  yesPool         Float
+  noPool          Float
+  distributionPool Float
+  createdAt       DateTime   @default(now())
+  creator         User       @relation(fields: [creatorAddress], references: [address])
+  tokens          DTFToken[]
+  positions       Position[]
+  events          Event[]
+}
+
+model DTFToken {
+  id           Int      @id @default(autoincrement())
+  dtfId        Int
+  tokenAddress String
+  amount       Float
+  dtf          DTF      @relation(fields: [dtfId], references: [id])
+}
+
+model Position {
+  id            Int       @id @default(autoincrement())
+  userAddress   String
+  dtfId         Int
+  isYesPosition Boolean
+  shareAmount   Float
+  entryPrice    Float
+  claimed       Boolean   @default(false)
+  claimedAt     DateTime?
+  transactionHash String? 
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userAddress], references: [address])
+  dtf           DTF       @relation(fields: [dtfId], references: [id])
+  avgEntryPrice   Float? 
+}
+
+model Event {
+  id              Int      @id @default(autoincrement())
+  dtfId           Int
+  eventType       String
+  transactionHash String
+  blockNumber     Int
+  data            Json
+  createdAt       DateTime @default(now())
+  dtf             DTF      @relation(fields: [dtfId], references: [id])
+}
+
+model UserStatistics {
+  userAddress     String   @id
+  totalTrades     Int      @default(0)
+  winningTrades   Int      @default(0)
+  totalVolume     Float    @default(0)
+  totalProfitLoss Float    @default(0)
+  updatedAt       DateTime @default(now())
+  user            User     @relation(fields: [userAddress], references: [address])
+}
+
+model ProcessedEvent {
+  id              Int      @id @default(autoincrement())
+  eventType       String
+  transactionHash String
+  blockNumber     Int
+  processedAt     DateTime @default(now())
+
+  @@index([eventType, transactionHash])
+}
