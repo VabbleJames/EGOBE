@@ -155,6 +155,20 @@ router.get('/trades/:userAddress', async (req, res) => {
     res.setHeader('Surrogate-Control', 'no-store');
 
     const { userAddress } = req.params;
+    const { t: timestamp } = req.query;
+
+    console.log('Trade request details:', {
+      userAddress,
+      timestamp,
+      currentTime: new Date().toISOString()
+    });
+
+    // Log database status and connection
+    console.log('Database connection status:', !!prisma);
+
+    // Get total positions in database
+    const totalPositions = await prisma.position.count();
+    console.log('Total positions in database:', totalPositions);
 
     // Add logging to debug prisma query
     console.log('Fetching trades for user:', userAddress);
@@ -172,26 +186,48 @@ router.get('/trades/:userAddress', async (req, res) => {
       ]
     });
 
-    console.log('Found positions:', positions.length); // Debug log
+    console.log('Found raw positions:', {
+      count: positions.length,
+      positions: positions.map(p => ({
+        dtfId: p.dtfId,
+        isYesPosition: p.isYesPosition,
+        shareAmount: p.shareAmount
+      }))
+    });
+
+    // Group positions logging
+    console.log('Starting position grouping...');
+    const groupedPositions = positions.reduce((acc: PositionGroups, position) => {
+      const key = `${position.dtfId}-${position.isYesPosition}`;
+      if (!acc[key]) {
+        console.log(`Creating new group for key: ${key}`);
+        acc[key] = {
+          dtfId: position.dtfId,
+          dtfName: position.dtf.name,
+          isYesPosition: position.isYesPosition,
+          totalShares: 0,
+          totalCost: 0,
+          dtf: position.dtf,
+          claimed: position.claimed
+        };
+      }
+      acc[key].totalShares += position.shareAmount;
+      acc[key].totalCost += (position.entryPrice * position.shareAmount) / 1e6;
+      return acc;
+    }, {});
+
+    console.log('Position grouping complete:', {
+      numberOfGroups: Object.keys(groupedPositions).length
+    });
 
     const formattedTrades = await Promise.all(
-      Object.values(positions.reduce((acc: PositionGroups, position) => {
-        const key = `${position.dtfId}-${position.isYesPosition}`;
-        if (!acc[key]) {
-          acc[key] = {
-            dtfId: position.dtfId,
-            dtfName: position.dtf.name,
-            isYesPosition: position.isYesPosition,
-            totalShares: 0,
-            totalCost: 0,
-            dtf: position.dtf,
-            claimed: position.claimed
-          };
-        }
-        acc[key].totalShares += position.shareAmount;
-        acc[key].totalCost += (position.entryPrice * position.shareAmount) / 1e6;
-        return acc;
-      }, {})).map((groupedPosition: GroupedPosition) => {
+      Object.values(groupedPositions).map(async (groupedPosition: GroupedPosition) => {
+        console.log('Processing grouped position:', {
+          dtfId: groupedPosition.dtfId,
+          totalShares: groupedPosition.totalShares,
+          totalCost: groupedPosition.totalCost
+        });
+
         const averageEntryPrice = groupedPosition.totalCost / groupedPosition.totalShares;
 
         let roi;
@@ -206,19 +242,7 @@ router.get('/trades/:userAddress', async (req, res) => {
           }
         }
 
-        const expiryTime = new Date(groupedPosition.dtf.expiryTime).getTime();
-        const currentTime = Date.now();
-
-       /* console.log('Status Check:', {
-          dtfId: groupedPosition.dtfId,
-          expiryTime,
-          currentTime,
-          expiryDate: new Date(groupedPosition.dtf.expiryTime).toISOString(),
-          currentDate: new Date(currentTime).toISOString(),
-          isSettled: groupedPosition.dtf.isSettled
-        }); */
-
-        return {
+        const formattedTrade = {
           dtfId: groupedPosition.dtfId,
           dtfName: groupedPosition.dtfName,
           position: groupedPosition.isYesPosition ? 'YES' : 'NO',
@@ -234,13 +258,30 @@ router.get('/trades/:userAddress', async (req, res) => {
           canClaim: groupedPosition.dtf.isSettled && !groupedPosition.claimed,
           dtf: groupedPosition.dtf
         };
+
+        console.log('Formatted trade:', formattedTrade);
+        return formattedTrade;
       })
     );
 
+    console.log('Sending response:', {
+      numberOfTrades: formattedTrades.length,
+      timestamp: new Date().toISOString()
+    });
+
     res.json(formattedTrades);
-  } catch (error) {
-    console.error('Error fetching trades:', error);
-    res.status(500).json({ error: 'Failed to fetch trades' });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Error in trades endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch trades', 
+      details: error.message,
+      timestamp: new Date().toISOString() 
+    });
   }
 });
 

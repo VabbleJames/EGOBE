@@ -18,7 +18,7 @@ app.use(cors({
     'http://localhost:3000'               // Alternative local port
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization','Cache-Control', 'Pragma', 'Expires'], //add for testing
   credentials: true
 }));
 
