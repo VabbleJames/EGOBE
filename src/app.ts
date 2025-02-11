@@ -8,12 +8,27 @@ import { EventIndexer } from './services/eventIndexer';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 8080; // Changed to 8080 to match Railway
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://ego-git-main-james-o-connors-projects.vercel.app',    // Vercel
+    'http://localhost:5173',              // Local development
+    'http://localhost:3000'               // Alternative local port
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(helmet());
 app.use(express.json());
+
+// Add a health check endpoint
+app.get('/api/v1/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // Routes
 app.use('/api/v1', dtfRoutes);
