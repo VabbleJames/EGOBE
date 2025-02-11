@@ -464,7 +464,7 @@ export class EventIndexer {
     }
     
     private listenToEvents() {
-        // Basic event listeners that were working before
+        // Basic event listeners
         this.contract.on('DTFCreated', async (...args) => {
             const event = args[args.length - 1];
             await this.handleDTFCreated(event);
