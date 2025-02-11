@@ -8,59 +8,59 @@ datasource db {
 }
 
 model User {
-  address        String     @id
+  address        String          @id
   firstTradeDate DateTime?
-  totalVolume    Float      @default(0)
-  createdAt      DateTime   @default(now())
-  positions      Position[]
+  totalVolume    Float           @default(0)
+  createdAt      DateTime        @default(now())
   dtfs           DTF[]
+  positions      Position[]
   statistics     UserStatistics?
 }
 
 model DTF {
-  id              Int        @id
-  creatorAddress  String
-  name            String
-  expiryTime      DateTime
-  targetValuation Float
-  isTargetHigher  Boolean
-  isSettled       Boolean    @default(false)
-  yesWon          Boolean?
-  tokensWithdrawn Boolean    @default(false)
-  yesTokenAddress String
-  noTokenAddress  String
-  yesPool         Float
-  noPool          Float
+  id               Int        @id
+  creatorAddress   String
+  name             String
+  expiryTime       DateTime
+  targetValuation  Float
+  isTargetHigher   Boolean
+  isSettled        Boolean    @default(false)
+  tokensWithdrawn  Boolean    @default(false)
+  yesTokenAddress  String
+  noTokenAddress   String
+  yesPool          Float
+  noPool           Float
   distributionPool Float
-  createdAt       DateTime   @default(now())
-  creator         User       @relation(fields: [creatorAddress], references: [address])
-  tokens          DTFToken[]
-  positions       Position[]
-  events          Event[]
+  createdAt        DateTime   @default(now())
+  yesWon           Boolean?
+  creator          User       @relation(fields: [creatorAddress], references: [address])
+  tokens           DTFToken[]
+  events           Event[]
+  positions        Position[]
 }
 
 model DTFToken {
-  id           Int      @id @default(autoincrement())
+  id           Int    @id @default(autoincrement())
   dtfId        Int
   tokenAddress String
   amount       Float
-  dtf          DTF      @relation(fields: [dtfId], references: [id])
+  dtf          DTF    @relation(fields: [dtfId], references: [id])
 }
 
 model Position {
-  id            Int       @id @default(autoincrement())
-  userAddress   String
-  dtfId         Int
-  isYesPosition Boolean
-  shareAmount   Float
-  entryPrice    Float
-  claimed       Boolean   @default(false)
-  claimedAt     DateTime?
-  transactionHash String? 
-  createdAt     DateTime  @default(now())
-  user          User      @relation(fields: [userAddress], references: [address])
-  dtf           DTF       @relation(fields: [dtfId], references: [id])
-  avgEntryPrice   Float? 
+  id              Int       @id @default(autoincrement())
+  userAddress     String
+  dtfId           Int
+  isYesPosition   Boolean
+  shareAmount     Float
+  entryPrice      Float
+  claimed         Boolean   @default(false)
+  claimedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  transactionHash String?
+  avgEntryPrice   Float?
+  dtf             DTF       @relation(fields: [dtfId], references: [id])
+  user            User      @relation(fields: [userAddress], references: [address])
 }
 
 model Event {

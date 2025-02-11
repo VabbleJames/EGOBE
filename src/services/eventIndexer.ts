@@ -42,12 +42,14 @@ export class EventIndexer {
             const dtfCreatedEvents = await this.contract.queryFilter(this.contract.filters.DTFCreated(), fromBlock);
             const dtfSettledEvents = await this.contract.queryFilter(this.contract.filters.DTFSettled(), fromBlock);
             const tokensWithdrawnEvents = await this.contract.queryFilter(this.contract.filters.TokensWithdrawn(), fromBlock);
+            const sharesPurchasedEvents = await this.contract.queryFilter(this.contract.filters.SharesPurchased(), fromBlock);
     
             // Sort all events by block number and transaction index
             const allEvents = [
                 ...dtfCreatedEvents.map(e => ({...e, type: 'DTFCreated'})),
                 ...dtfSettledEvents.map(e => ({...e, type: 'DTFSettled'})),
-                ...tokensWithdrawnEvents.map(e => ({...e, type: 'TokensWithdrawn'}))
+                ...tokensWithdrawnEvents.map(e => ({...e, type: 'TokensWithdrawn'})),
+                ...sharesPurchasedEvents.map(e => ({...e, type: 'SharesPurchased'}))
             ].sort((a, b) => {
                 if (a.blockNumber !== b.blockNumber) {
                     return a.blockNumber - b.blockNumber;
